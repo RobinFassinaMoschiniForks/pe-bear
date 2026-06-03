@@ -27,12 +27,21 @@ public:
 
 	QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option,
 		const QModelIndex &index) const override;
+
+	void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const;
+
+	void setSelectionColor(const QColor& color)
+	{
+		m_selectionColor = color;
+	}
+
 Q_SIGNALS:
 	void dataSet(int col, int row) const;
 
 private:
 	void selectNextParentItem(const QModelIndex &index) const;
 
+	QColor m_selectionColor;
 	QRegularExpressionValidator validator;
 };
 
@@ -80,6 +89,7 @@ protected:
 	void initHeader();
 	void initHeaderMenu();
 	void initMenu();
+	void setSelectionColor(const QColor& color);
 
 	QAction *back, *undo;
 
@@ -87,5 +97,6 @@ protected:
 	QHeaderView *hHdr;
 	HexDumpModel *hexModel;
 	QScrollBar vScrollbar;
+	HexItemDelegate* m_delegate;
 };
 

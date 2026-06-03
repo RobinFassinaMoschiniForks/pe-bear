@@ -37,7 +37,7 @@ QModelIndex getNextIndex(QAbstractItemModel &model, const QModelIndex &index)
 //----
 
 HexItemDelegate::HexItemDelegate(QObject* parent) :
-	QStyledItemDelegate(parent)
+	QStyledItemDelegate(parent), m_selectionColor(QColor(255, 0, 0))
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 	validator.setRegularExpression(QRegularExpression("[0-9A-Fa-f]{2,}"));
@@ -54,7 +54,6 @@ void HexItemDelegate::selectNextParentItem(const QModelIndex &index) const
 	parentView->setCurrentIndex(index);
 	parentView->edit(index);
 }
-
 
 QWidget* HexItemDelegate::createEditor(QWidget *parent,
 	const QStyleOptionViewItem &option,
@@ -98,10 +97,20 @@ void HexItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, c
 	emit dataSet(index.column(), index.row());
 }
 
+void HexItemDelegate::paint(QPainter* painter,const QStyleOptionViewItem& option, const QModelIndex& index) const
+{
+	if (option.state & QStyle::State_Selected)
+	{
+		painter->fillRect(option.rect, m_selectionColor);
+	}
+	QStyledItemDelegate::paint(painter, option, index);
+}
+
+
 //--------------------------------------------------------------------
 
 HexTableView::HexTableView(QWidget *parent)
-	: ExtTableView(parent), hexModel(NULL), hexColWidth(COL_WIDTH)
+	: ExtTableView(parent), hexModel(NULL), hexColWidth(COL_WIDTH), m_delegate(NULL)
 {
 	this->vHdr = new OffsetHeader(this);
 	hHdr = new QHeaderView(Qt::Horizontal, this);	
@@ -124,9 +133,9 @@ HexTableView::HexTableView(QWidget *parent)
 	adjustMinWidth();
 	enableMenu(true);
 
-	HexItemDelegate *delegate = new HexItemDelegate(this);
-	setItemDelegate(delegate);
-	connect (delegate, SIGNAL(dataSet(int, int)), this, SLOT(onDataSet(int, int)) );
+	m_delegate = new HexItemDelegate(this);
+	setItemDelegate(m_delegate);
+	connect (m_delegate, SIGNAL(dataSet(int, int)), this, SLOT(onDataSet(int, int)) );
 }
 
 void HexTableView::init()
@@ -145,6 +154,11 @@ void HexTableView::init()
 
 	this->setContentsMargins(0, 0, 0, 0);
 	this->setContextMenuPolicy(Qt::CustomContextMenu);
+}
+
+void HexTableView::setSelectionColor(const QColor& color)
+{
+	this->m_delegate->setSelectionColor(color);
 }
 
 void HexTableView::initHeaderMenu()
@@ -460,6 +474,17 @@ void HexTableView::setModel(HexDumpModel *model)
 
 	connect(this->hexModel->myPeHndl, SIGNAL(pageOffsetModified(offset_t, bufsize_t)), this, SLOT(updateUndoAction()) );
 	connect(this->hexModel->myPeHndl, SIGNAL(hovered()), this, SLOT(onResetRequested()) );
+
+	// TODO: get from the style sheet:
+	static QColor selectionHex = QColor("#DAC8AE");
+	static QColor selectionText = QColor("#592720");
+
+	if (this->hexModel->isHexView()) {
+		this->setSelectionColor(selectionHex);
+	}
+	else {
+		this->setSelectionColor(selectionText);
+	}
 	adjustMinWidth();
 }
 
