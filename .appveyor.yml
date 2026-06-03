@@ -2,6 +2,7 @@ version: '{branch}.{build}'
 skip_tags: true
 
 image:
+- Ubuntu2204
 - Visual Studio 2022
 - macos
 
@@ -48,10 +49,10 @@ for:
 
     install:
      - git submodule update --init --recursive
-     - export QTDIR="$HOME/Qt/6.9.1"
+     - export QTDIR="$HOME/Qt/6.9"
      - export LD_LIBRARY_PATH="$QTDIR:$LD_LIBRARY_PATH"
      - export PATH="$QTDIR/bin:$PATH"
-     - export PATH="$QTDIR/gcc_64/bin:$PATH"
+     - export PATH="$QTDIR/linux_gcc_64/bin:$PATH"
      
     before_build:
       - cmake --version
