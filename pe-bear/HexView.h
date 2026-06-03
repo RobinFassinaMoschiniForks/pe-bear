@@ -69,8 +69,10 @@ public slots:
 	virtual void pasteToSelected();
 	virtual void clearSelected();
 	virtual void fillSelected();
-	virtual void followSelected();
-	offset_t getSelectedAddress();
+
+	virtual void followSelectedVa() { return followSelected(Executable::VA);  }
+	virtual void followSelectedRva() { return followSelected(Executable::RVA); }
+	virtual void followSelectedRaw() { return followSelected(Executable::RAW); }
 
 	void updateFollowAction();
 
@@ -84,6 +86,8 @@ public slots:
 	void onResetRequested() { reset(); }
 
 protected:
+	offset_t getSelectedAddress();
+	void followSelected(const Executable::addr_type& type);
 	bool isIndexListContinuous(QModelIndexList &list);
 
 	inline void adjustMinWidth();
@@ -95,7 +99,9 @@ protected:
 	void initMenu();
 	void setSelectionColor(const QColor& color);
 
-	QAction *backAction, *undoAction, *followAction;
+	QMenu* followAddrSubmenu;
+	QAction* followAction[Executable::ADDR_TYPE_COUNT] = { nullptr };
+	QAction *backAction, *undoAction;
 
 	OffsetHeader* vHdr;
 	QHeaderView *hHdr;

@@ -249,9 +249,20 @@ void HexTableView::initMenu()
 	undoAction->setShortcut(Qt::CTRL | Qt::Key_Z);
 	connect(undoAction, SIGNAL(triggered()), this, SLOT(undoLastModification()));
 
-	followAction = new QAction(tr("Follow selected VA"), menu);
-	menu->addAction(followAction);
-	connect(followAction, SIGNAL(triggered()), this, SLOT(followSelected()));
+	followAddrSubmenu = menu->addMenu(tr("Follow selected address"));
+
+	followAction[Executable::RAW] = new QAction(tr("Raw"), menu);
+	followAddrSubmenu->addAction(followAction[Executable::RAW]);
+	connect(followAction[Executable::RAW], SIGNAL(triggered()), this, SLOT(followSelectedRaw()));
+
+	followAction[Executable::RVA] = new QAction(tr("RVA"), menu);
+	followAddrSubmenu->addAction(followAction[Executable::RVA]);
+	connect(followAction[Executable::RVA], SIGNAL(triggered()), this, SLOT(followSelectedRva()));
+
+	followAction[Executable::VA] = new QAction(tr("VA"), menu);
+	followAddrSubmenu->addAction(followAction[Executable::VA]);
+	connect(followAction[Executable::VA], SIGNAL(triggered()), this, SLOT(followSelectedVa()));
+
 	connect(menu, &QMenu::aboutToShow, this, &HexTableView::updateFollowAction);
 }
 
@@ -298,19 +309,38 @@ void HexTableView::onDataSet(int col, int row)
 
 void HexTableView::updateFollowAction()
 {
-	bool isEnabled = false;
-	if (this->hexModel && hexModel->myPeHndl) {
-		PeHandler* hndl = hexModel->myPeHndl;
-		offset_t addr = getSelectedAddress();
-		if (hndl->isValidAddr(Executable::VA, addr)) {
-			isEnabled = true;
-			followAction->setText("Follow: 0x" + QString::number(addr, 16));
+	const QString defaultDesc = tr("Follow selected address");
+
+	PeHandler* hndl = hexModel->myPeHndl;
+	const offset_t addr = getSelectedAddress();
+
+	if (!hndl || addr == INVALID_ADDR) {
+		this->followAddrSubmenu->setTitle(defaultDesc);
+		followAddrSubmenu->setEnabled(false);
+		return;
+	}
+
+	bool isMenuEnabled = false;
+
+	for (int t = 0; t < Executable::ADDR_TYPE_COUNT; ++t) {
+		const Executable::addr_type aType = static_cast<Executable::addr_type>(t);
+		bool _isVisible = false;
+		if (hndl->isValidAddr(aType, addr)) {
+			isMenuEnabled = true;
+			_isVisible = true;
+		}
+		if (followAction[aType]) {
+			followAction[aType]->setVisible(_isVisible);
 		}
 	}
-	if (!isEnabled) {
-		followAction->setText("Follow selected VA");
+
+	followAddrSubmenu->setEnabled(isMenuEnabled);
+
+	if (!isMenuEnabled) {
+		this->followAddrSubmenu->setTitle(defaultDesc);
+		return;
 	}
-	followAction->setEnabled(isEnabled);
+	followAddrSubmenu->setTitle("Follow: 0x" + QString::number(addr, 16));
 }
 
 offset_t HexTableView::getSelectedAddress()
@@ -333,7 +363,7 @@ offset_t HexTableView::getSelectedAddress()
 	return static_cast<offset_t>(number);
 }
 
-void HexTableView::followSelected()
+void HexTableView::followSelected(const Executable::addr_type& aType)
 {
 	if (!this->hexModel) return;
 
@@ -341,7 +371,7 @@ void HexTableView::followSelected()
 	if (!hndl) return;
 
 	const offset_t addr = getSelectedAddress();
-	hndl->setDisplayed(Executable::VA, addr);
+	hndl->setDisplayed(aType, addr);
 }
 
 void HexTableView::copySelected()
