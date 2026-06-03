@@ -1,9 +1,40 @@
 #include "DiffWindow.h"
 #include <QtGlobal>
 #include <bearparser/Util.h>
+#include "../../HexView.h"
+
+// Util:
+
+template <typename T_INT>
+bool hexListToNumber(const QModelIndexList& list, const bool isLittleEndian, T_INT& number)
+{
+	int size = list.size();
+	if (size > sizeof(T_INT)) {
+		return false;
+	}
+	int startIndex = 0;
+	int maxIndex = size;
+	int step = 1;
+	if (!isLittleEndian) {
+		startIndex = (size - 1);
+		maxIndex = (-1);
+		step = (-1);
+	}
+
+	for (int i = startIndex; i != maxIndex; i += step) {
+		const QModelIndex& index = list.at(i);
+
+		bool isOk;
+		uint8_t tempNum = index.data().toString().toInt(&isOk, 16);
+		if (!isOk) break;
+
+		number <<= 8;
+		number ^= tempNum;
+	}
+	return number;
+}
 
 //------------------------------------------------------------------------------------
-
 
 DiffWindow::DiffWindow(PeHandlersManager &peMngr, QWidget *parent)
     : QMainWindow(parent), peManger(peMngr),
@@ -153,37 +184,11 @@ void DiffWindow::hexSelected(ContentIndx contentIndx)
 	int col = -1;
 	int size = list.size();
 
-	if (size > (64 / 8)) {
+	int64_t bEndianNum = 0;
+	int64_t lEndianNum = 0;
+	if (!hexListToNumber(list, true, lEndianNum) || !hexListToNumber(list, false, bEndianNum)) {
 		this->numEdit[contentIndx].setText("");
 		return;
-	}
-	
-	int64_t lEndianNum = 0;
-
-	size = size > 8 ? 8 : size;
-
-	for (int i = 0; i < size; i++) {
-		QModelIndex index = list.at(i);
-
-		bool isOk;
-		uint8_t tempNum = index.data().toString().toInt(&isOk, 16);
-		if (!isOk) break;
-
-		lEndianNum <<= 8;
-		lEndianNum ^= tempNum;
-	}
-
-	int64_t bEndianNum = 0;
-
-	for (int i = (size - 1); i >= 0; i--) {
-		QModelIndex index = list.at(i);
-		if (!index.isValid()) continue;
-		bool isOk;
-		uint8_t tempNum = index.data().toString().toInt(&isOk, 16);
-		if (!isOk) break;
-
-		bEndianNum <<= 8;
-		bEndianNum ^= tempNum;
 	}
 
 	//static char buff[0x100] = { 0 };

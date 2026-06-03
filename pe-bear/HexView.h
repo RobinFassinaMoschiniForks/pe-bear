@@ -69,6 +69,10 @@ public slots:
 	virtual void pasteToSelected();
 	virtual void clearSelected();
 	virtual void fillSelected();
+	virtual void followSelected();
+	offset_t getSelectedAddress();
+
+	void updateFollowAction();
 
 	void setPageUp();
 	void setPageDown();
@@ -91,7 +95,7 @@ protected:
 	void initMenu();
 	void setSelectionColor(const QColor& color);
 
-	QAction *back, *undo;
+	QAction *backAction, *undoAction, *followAction;
 
 	OffsetHeader* vHdr;
 	QHeaderView *hHdr;

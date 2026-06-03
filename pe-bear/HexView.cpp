@@ -13,6 +13,41 @@
 #include <iostream>
 #include "TempBuffer.h"
 
+// Util:
+
+quint64 littleEndianToInt(const QByteArray& bytes)
+{
+	quint64 value = 0;
+
+	for (int i = 0; i < bytes.size() && i < 8; ++i) {
+		value |= (static_cast<quint64>(
+			static_cast<unsigned char>(bytes[i])) << (8 * i));
+	}
+
+	return value;
+}
+
+bool getBytesContent(const QModelIndexList& list, const HexDumpModel& hexModel, QByteArray& bytes)
+{
+	const int size = list.size();
+	if (!size) {
+		return false;
+	}
+	for (int i = 0; i < size; i++) {
+		QModelIndex index = list.at(i);
+		QVariant c = hexModel.getRawContentAt(index);
+		if (c.canConvert(QVariant::Char)) {
+#if QT_VERSION >= 0x050000
+			BYTE b = c.toChar().toLatin1();
+#else
+			BYTE b = c.toChar().toAscii();
+#endif
+			bytes.append(b);
+		}
+	}
+	return !bytes.isEmpty();
+}
+
 //----
 QModelIndex getNextIndex(QAbstractItemModel &model, const QModelIndex &index)
 {
@@ -179,17 +214,15 @@ void HexTableView::initHeaderMenu()
 	connect(pgDn, SIGNAL(triggered()), this, SLOT(setPageDown()));
 	naviSubMenu->addAction(pgDn);
 
-	back = new QAction(tr("Back to offset"), &hdrMenu);
-	back->setShortcut(Qt::Key_B);
-	connect(back, SIGNAL(triggered()), this, SLOT(undoOffset()));
-	naviSubMenu->addAction(back);
+	backAction = new QAction(tr("Back to offset"), &hdrMenu);
+	backAction->setShortcut(Qt::Key_B);
+	connect(backAction, SIGNAL(triggered()), this, SLOT(undoOffset()));
+	naviSubMenu->addAction(backAction);
 }
 
 void HexTableView::initMenu()
 {
 	QMenu* menu = &defaultMenu;
-	//QMenu* editSubmenu = menu.addMenu("&Selection");
-
 	QAction *copySelAction = new QAction(tr("Copy"), menu);
 	copySelAction->setShortcut(Qt::CTRL | Qt::Key_C);
 
@@ -212,9 +245,14 @@ void HexTableView::initMenu()
 	fillSubmenu->addAction(fillSelAction);
 	connect(fillSelAction, SIGNAL(triggered()), this, SLOT(fillSelected()));
 
-	undo = new QAction(tr("Undo"), menu);
-	undo->setShortcut(Qt::CTRL | Qt::Key_Z);
-	connect(undo, SIGNAL(triggered()), this, SLOT(undoLastModification()));
+	undoAction = new QAction(tr("Undo"), menu);
+	undoAction->setShortcut(Qt::CTRL | Qt::Key_Z);
+	connect(undoAction, SIGNAL(triggered()), this, SLOT(undoLastModification()));
+
+	followAction = new QAction(tr("Follow selected VA"), menu);
+	menu->addAction(followAction);
+	connect(followAction, SIGNAL(triggered()), this, SLOT(followSelected()));
+	connect(menu, &QMenu::aboutToShow, this, &HexTableView::updateFollowAction);
 }
 
 void HexTableView::initHeader()
@@ -256,6 +294,54 @@ void HexTableView::onDataSet(int col, int row)
 	QModelIndex nextIndx = getNextIndex(*this->model(), indx);
 	this->setCurrentIndex(nextIndx);
 	this->edit(nextIndx);
+}
+
+void HexTableView::updateFollowAction()
+{
+	bool isEnabled = false;
+	if (this->hexModel && hexModel->myPeHndl) {
+		PeHandler* hndl = hexModel->myPeHndl;
+		offset_t addr = getSelectedAddress();
+		if (hndl->isValidAddr(Executable::VA, addr)) {
+			isEnabled = true;
+			followAction->setText("Follow: 0x" + QString::number(addr, 16));
+		}
+	}
+	if (!isEnabled) {
+		followAction->setText("Follow selected VA");
+	}
+	followAction->setEnabled(isEnabled);
+}
+
+offset_t HexTableView::getSelectedAddress()
+{
+	if (!this->hexModel) return INVALID_ADDR;
+
+	PeHandler* hndl = hexModel->myPeHndl;
+	if (!hndl) return INVALID_ADDR;
+
+	QItemSelectionModel* model = this->selectionModel();
+	QModelIndexList list = model->selectedIndexes();
+	const int size = list.size();
+	if (!size || !isIndexListContinuous(list)) {
+		return INVALID_ADDR;
+	}
+	QByteArray bytes;
+	if (!getBytesContent(list, *hexModel, bytes)) return INVALID_ADDR;
+
+	const quint64 number = littleEndianToInt(bytes);
+	return static_cast<offset_t>(number);
+}
+
+void HexTableView::followSelected()
+{
+	if (!this->hexModel) return;
+
+	PeHandler* hndl = hexModel->myPeHndl;
+	if (!hndl) return;
+
+	const offset_t addr = getSelectedAddress();
+	hndl->setDisplayed(Executable::VA, addr);
 }
 
 void HexTableView::copySelected()
@@ -422,10 +508,10 @@ void HexTableView::updateUndoAction()
 {
 	if (!hexModel) return; 
 	if (hexModel->myPeHndl->prevOffsets.size() > 0) {
-		this->back->setEnabled(true);
-		this->back->setText(tr("Back to: 0x") + QString::number(hexModel->myPeHndl->prevOffsets.top(), 16).toUpper());
+		this->backAction->setEnabled(true);
+		this->backAction->setText(tr("Back to: 0x") + QString::number(hexModel->myPeHndl->prevOffsets.top(), 16).toUpper());
 	} else {
-		this->back->setEnabled(false);
+		this->backAction->setEnabled(false);
 	}
 }
 

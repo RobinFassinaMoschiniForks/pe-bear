@@ -222,6 +222,8 @@ public:
 	/* display */
 	bool markedBranching(offset_t origin, offset_t target);
 	bool setDisplayed(bool isRVA, offset_t displayedOffset, bufsize_t displayedSize = SIZE_UNLIMITED);
+	bool setDisplayed(Executable::addr_type addrType, offset_t displayedOffset, bufsize_t displayedSize = SIZE_UNLIMITED);
+	bool isValidAddr(Executable::addr_type addrType, offset_t offset);
 
 	offset_t getDisplayedOffset() { return displayedOffset; }
 	size_t getDisplayedSize() { return displayedSize; }

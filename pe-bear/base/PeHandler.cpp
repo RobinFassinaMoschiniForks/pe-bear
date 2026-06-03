@@ -190,12 +190,18 @@ void PeHandler::setHovered(bool isRVA, offset_t hOffset, bufsize_t hSize)
 	emit hovered();
 }
 
-bool PeHandler::setDisplayed(bool isRVA, offset_t dOffset, bufsize_t dSize)
+bool PeHandler::isValidAddr(Executable::addr_type addrType, offset_t offset)
+{
+	if (!m_PE) return false;
+	offset_t raw = m_PE->convertAddr(offset, addrType, Executable::RAW);
+	return (raw == INVALID_ADDR) ? false : true;
+}
+
+bool PeHandler::setDisplayed(Executable::addr_type addrType, offset_t dOffset, bufsize_t dSize)
 {
 	if (!m_PE) return false;
 
-	Executable::addr_type aType = isRVA ? Executable::RVA : Executable::RAW;
-	offset_t raw =  m_PE->toRaw(dOffset, aType);
+	offset_t raw = m_PE->convertAddr(dOffset, addrType, Executable::RAW);
 	if (raw == INVALID_ADDR) return false;
 
 	dOffset = raw;
@@ -207,13 +213,19 @@ bool PeHandler::setDisplayed(bool isRVA, offset_t dOffset, bufsize_t dSize)
 	offset_t prevOff = this->displayedOffset;
 	if (prevOff >= 0) this->prevOffsets.push(prevOff);
 
-	/* set current */ 
+	/* set current */
 	this->displayedOffset = dOffset;
 	if (dSize != SIZE_UNLIMITED) {
 		this->displayedSize = dSize;
 	}
 	setPageOffset(this->displayedOffset);
 	return true;
+}
+
+bool PeHandler::setDisplayed(bool isRVA, offset_t dOffset, bufsize_t dSize)
+{
+	Executable::addr_type aType = isRVA ? Executable::RVA : Executable::RAW;
+	return setDisplayed(aType, dOffset, dSize);
 }
 
 void  PeHandler::undoDisplayOffset()
