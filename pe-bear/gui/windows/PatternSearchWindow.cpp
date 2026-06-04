@@ -29,15 +29,20 @@ PatternSearchWindow::PatternSearchWindow(QWidget *parent, PeHandler* peHndl)
 	signatureTab.setLayout(&signatureTabLayout);
 
 	// String search
-	stringTabLayout.addWidget(&searchedStrLabel);
-	stringTabLayout.addWidget(&searchedStrEdit);
-
 	searchedStrLabel.setText(tr("String to search:"));
 	searchedStrLabel.setBuddy(&searchedStrEdit);
-	stringTab.setLayout(&stringTabLayout);
 
-	tabWidget.addTab(&signatureTab, tr("Signature"));
-	tabWidget.addTab(&stringTab, tr("String"));
+	encodingCombo.addItem(tr("ANSI"));
+	encodingCombo.addItem(tr("UTF-16"));
+
+	stringTabLayout.addWidget(&searchedStrLabel);
+	stringTabLayout.addWidget(&searchedStrEdit);
+	stringTabLayout.addWidget(&encodingCombo);
+
+	stringTab.setLayout(&stringTabLayout);
+	//---
+	tabWidget.addTab(&stringTab, tr("Strings"));
+	tabWidget.addTab(&signatureTab, tr("Signatures"));
 
 	secPropertyLayout4.addWidget(&progressBar);
 	
@@ -68,6 +73,30 @@ PatternSearchWindow::PatternSearchWindow(QWidget *parent, PeHandler* peHndl)
 		});
 }
 
+QString PatternSearchWindow::stringToSignature(const QString& text)
+{
+	QByteArray bytes;
+
+	switch (encodingCombo.currentIndex())
+	{
+	case 0: // ANSI
+		bytes = text.toLocal8Bit();
+		break;
+
+	case 1: // UTF-16
+		bytes = QByteArray(
+			reinterpret_cast<const char*>(text.utf16()),
+			text.size() * sizeof(ushort)
+		);
+		break;
+
+	default:
+		return QString();
+	}
+
+	return bytes.toHex().toUpper();
+}
+
 void PatternSearchWindow::onSearchClicked()
 {
 	if (!this->m_peHndl) return;
@@ -84,21 +113,16 @@ void PatternSearchWindow::onSearchClicked()
 	if (offset >= fullSize) return;
 	
 	QString text;
-	bool isBySign = false;
 	if (tabWidget.currentWidget() == &signatureTab) {
-		isBySign = true;
 		text = patternEdit.text();
 	}
 	else if (tabWidget.currentWidget() == &stringTab) {
-		isBySign = false;
 		text = searchedStrEdit.text();
 		if (text.length()) {
-			QByteArray utf8 = text.toUtf8();
-			QString hex = utf8.toHex().toUpper();
-			text = hex;
+			text = stringToSignature(text);
 		}
 	}
-	if (!text.length()) {
+	if (text.isEmpty()) {
 		return;
 	}
 	
@@ -106,12 +130,12 @@ void PatternSearchWindow::onSearchClicked()
 		threadMngr = new SignFinderThreadManager(exe);
 	}
 
-	threadMngr->setStartOffset(offset);
-
 	if (!threadMngr->loadSignature(tr("Searched"), text)) {
+		progressBar.setValue(0);
 		QMessageBox::information(this, tr("Info"), tr("Could not parse the signature!"), QMessageBox::Ok);
 		return;
 	}
+
 	connect(threadMngr, SIGNAL(gotMatches(MatchesCollection* )), 
 		this, SLOT(matchesFound(MatchesCollection *)), Qt::UniqueConnection);
 	connect(threadMngr, SIGNAL(progressUpdated(int )), 
@@ -121,6 +145,7 @@ void PatternSearchWindow::onSearchClicked()
 		
 	progressBar.setVisible(true);
 	progressBar.setValue(0);
+	threadMngr->setStartOffset(offset);
 	threadMngr->recreateThread();
 }
 

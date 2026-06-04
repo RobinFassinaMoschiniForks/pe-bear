@@ -45,6 +45,8 @@ protected slots:
 	void onSearchStarted(bool isStarted);
 
 protected:
+	QString stringToSignature(const QString& text);
+
 	QVBoxLayout topLayout;
 	QHBoxLayout secPropertyLayout2;
 	QHBoxLayout secPropertyLayout4;
@@ -61,8 +63,10 @@ protected:
 
 	QLabel patternLabel;
 	QLineEdit patternEdit;
+
 	QLabel searchedStrLabel;
 	QLineEdit searchedStrEdit;
+	QComboBox encodingCombo;
 
 	QLabel offsetLabel;
 	HexSpinBox startOffsetBox;
