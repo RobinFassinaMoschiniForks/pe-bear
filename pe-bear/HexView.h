@@ -40,8 +40,6 @@ Q_SIGNALS:
 	void dataSet(int col, int row) const;
 
 private:
-	void selectNextParentItem(const QModelIndex &index) const;
-
 	QColor m_selectionBgColor, m_selectionTextColor;
 	QRegularExpressionValidator validator;
 };

@@ -82,15 +82,6 @@ HexItemDelegate::HexItemDelegate(QObject* parent) :
 #endif
 }
 
-void HexItemDelegate::selectNextParentItem(const QModelIndex &index) const
-{
-	QTableView *parentView = qobject_cast<QTableView*>(this->parent());
-	if (!parentView) return;
-	
-	parentView->setCurrentIndex(index);
-	parentView->edit(index);
-}
-
 QWidget* HexItemDelegate::createEditor(QWidget *parent,
 	const QStyleOptionViewItem &option,
 	const QModelIndex &index) const
@@ -129,9 +120,14 @@ QWidget* HexItemDelegate::createEditor(QWidget *parent,
 
 void HexItemDelegate::setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex& index) const
 {
+	const QString before = model->data(index, Qt::EditRole).toString();
 	QStyledItemDelegate::setModelData(editor, model, index);
-	emit dataSet(index.column(), index.row());
+	const QString after = model->data(index, Qt::EditRole).toString();
+	if (before != after) {
+		emit dataSet(index.column(), index.row());
+	}
 }
+
 void HexItemDelegate::paint(QPainter* painter,
 	const QStyleOptionViewItem& option,
 	const QModelIndex& index) const
