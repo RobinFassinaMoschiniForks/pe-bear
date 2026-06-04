@@ -60,17 +60,6 @@ PatternSearchWindow::PatternSearchWindow(QWidget *parent, PeHandler* peHndl)
 	buttonLayout.addWidget(&searchButton);
 	connect(&searchButton, SIGNAL(clicked()), this, SLOT(onSearchClicked()));
 	patternEdit.setFocus();
-
-	connect(&tabWidget, &QTabWidget::currentChanged,
-		this, [this](int index)
-		{
-			if (index == 0) {
-				patternEdit.setFocus();
-			}
-			else {
-				searchedStrEdit.setFocus();
-			}
-		});
 }
 
 QString PatternSearchWindow::stringToSignature(const QString& text)
