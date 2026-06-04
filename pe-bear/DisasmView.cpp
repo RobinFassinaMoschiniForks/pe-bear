@@ -34,11 +34,12 @@ DisasmScrollBar::DisasmScrollBar(QWidget *parent)
 	: QScrollBar(parent), myModel(NULL)
 {
 	this->setAutoFillBackground(true);
-	QPalette *palette = new QPalette();
-	palette->setColor(QPalette::Text, Qt::red);
-	palette->setColor(QPalette::Window, Qt::yellow);
-	palette->setColor(QPalette::Base, Qt::white);
-	this->setPalette(*palette);
+
+	QPalette palette;
+	palette.setColor(QPalette::Text, Qt::red);
+	palette.setColor(QPalette::Window, Qt::yellow);
+	palette.setColor(QPalette::Base, Qt::white);
+	this->setPalette(palette);
 
 	initMenu();
 	enableMenu(true);
@@ -117,11 +118,11 @@ QWidget* DisasmItemDelegate::createEditor(QWidget *parent, const QStyleOptionVie
 	if (!lineEdit) {
 		return editor;
 	}
-	QPalette *palette = new QPalette();
-	palette->setColor(QPalette::Text, Qt::red);
-	palette->setColor(QPalette::Window, Qt::blue);
-	palette->setColor(QPalette::Base, Qt::blue);
-	lineEdit->setPalette(*palette);
+	QPalette palette;
+	palette.setColor(QPalette::Text, Qt::red);
+	palette.setColor(QPalette::Window, Qt::blue);
+	palette.setColor(QPalette::Base, Qt::blue);
+	lineEdit->setPalette(palette);
 	lineEdit->setAutoFillBackground(true);
 	lineEdit->setFrame(false);
 	

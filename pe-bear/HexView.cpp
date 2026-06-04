@@ -92,11 +92,12 @@ QWidget* HexItemDelegate::createEditor(QWidget *parent,
 	if (!lineEdit) {
 		return editor;
 	}
-	QPalette *palette = new QPalette();
-	palette->setColor(QPalette::Text, Qt::red);
-	palette->setColor(QPalette::Window, Qt::yellow);
-	palette->setColor(QPalette::Base, Qt::white);
-	lineEdit->setPalette(*palette);
+	QPalette palette;
+	palette.setColor(QPalette::Text, Qt::red);
+	palette.setColor(QPalette::Window, Qt::yellow);
+	palette.setColor(QPalette::Base, Qt::white);
+	lineEdit->setPalette(palette);
+
 	lineEdit->setAutoFillBackground(true);
 	lineEdit->setFrame(false);
 
