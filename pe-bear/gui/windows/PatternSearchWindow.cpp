@@ -119,7 +119,7 @@ void PatternSearchWindow::onSearchClicked()
 		threadMngr = new SignFinderThreadManager(exe);
 	}
 
-	if (!threadMngr->loadSignature(tr("Searched"), text)) {
+	if (!threadMngr->loadSignature("Searched", text)) {
 		progressBar.setValue(0);
 		QMessageBox::information(this, tr("Info"), tr("Could not parse the signature!"), QMessageBox::Ok);
 		return;
