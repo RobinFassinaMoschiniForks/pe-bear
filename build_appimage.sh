@@ -83,6 +83,12 @@ else
 fi
 
 # ---- 5. Bundle & produce the AppImage ------------------------------------
+# Deploy the Wayland platform plugins alongside the default xcb one, so the
+# AppImage runs natively on pure-Wayland sessions (no XWayland needed). These
+# require the Qt Wayland packages (qt6-wayland / qtwayland5) in the build env.
+export EXTRA_PLATFORM_PLUGINS="libqwayland-egl.so;libqwayland-generic.so"
+export EXTRA_QT_MODULES="waylandcompositor"
+
 echo "==> Bundling dependencies & producing AppImage"
 export OUTPUT="PE-bear_${VERSION}_${QT_VARIANT}_${ARCH}_linux.AppImage"
 
